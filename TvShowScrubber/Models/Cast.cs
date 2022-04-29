@@ -13,6 +13,7 @@ namespace TvShowScrubber.Models
         [JsonPropertyName("id")]
         public int PersonId { get; set; }
 
+        [JsonIgnore]
         public int ShowId { get; set; }
 
         [JsonPropertyName("name")]

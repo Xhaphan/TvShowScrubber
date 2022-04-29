@@ -10,5 +10,7 @@ namespace TvShowScrubber.Contexts
         public DbSet<Show> Shows { get; set; }
 
         public DbSet<Cast> Casts { get; set; }
+
+        public DbSet<ShowWithCastEmbedded> ShowsWithCastEmbedded { get; set; }
     }
 }

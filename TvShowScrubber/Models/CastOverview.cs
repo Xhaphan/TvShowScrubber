@@ -1,8 +1,15 @@
-﻿namespace TvShowScrubber.Models
+﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
+
+namespace TvShowScrubber.Models
 {
     public class CastOverview
     {
-        [System.Text.Json.Serialization.JsonPropertyName("person")]
+        [Key]
+        [JsonIgnore]
+        public int Id { get; set; }
+
+        [JsonPropertyName("person")]
         public Cast Person { get; set; }
     }
 }

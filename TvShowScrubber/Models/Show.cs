@@ -1,5 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
 namespace TvShowScrubber.Models;
@@ -7,11 +6,8 @@ namespace TvShowScrubber.Models;
 public class Show
 {
     [Key]
-    [JsonIgnore]
-    public int Id { get; set; }
-
     [JsonPropertyName("id")]
-    public int ShowId { get; set; }
+    public int Id { get; set; }
 
     [JsonPropertyName("name")]
     public string Name { get; set; }

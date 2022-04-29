@@ -1,43 +1,46 @@
-using TvShowScrubber.Endpoints;
 using Microsoft.EntityFrameworkCore;
-using TvShowScrubber.Services;
-using TvShowScrubber.Models;
+using Microsoft.Net.Http.Headers;
 using Polly;
 using Polly.Extensions.Http;
-using TvShowScrubber.Contexts;
-using Microsoft.Net.Http.Headers;
 using System.Net;
+using TvShowScrubber.Constants;
+using TvShowScrubber.Contexts;
+using TvShowScrubber.Endpoints;
+using TvShowScrubber.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+var baseAddress = builder.Configuration[SettingConstants.HttpClientBaseAddress] ?? "https://api.tvmaze.com";
 
-// Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+if (!int.TryParse(builder.Configuration[SettingConstants.HttpClientTimeOutInSeconds], out int timeOutInSeconds))
+    timeOutInSeconds = 600;
+
 builder.Services.AddEndpointsApiExplorer();
 
-builder.Services.AddDbContext<ShowsDb>(options =>
-{
-    options.UseInMemoryDatabase("items");
-    options.EnableSensitiveDataLogging();
-}, ServiceLifetime.Singleton);
-//var connectionString = builder.Configuration.GetConnectionString("Shows") ?? "Data Source=Shows.db";
-//builder.Services.AddSqlite<ShowsDb>(connectionString);
+//builder.Services.AddDbContext<ShowsDb>(options =>
+//{
+//    options.UseInMemoryDatabase("items");
+//    options.EnableSensitiveDataLogging();
+//});
+var connectionString = builder.Configuration.GetConnectionString("Shows") ?? "Data Source=Shows.db";
+builder.Services.AddSqlite<ShowsDb>(connectionString);
 
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddHttpClient(nameof(ShowsService), client =>
+
+builder.Services.AddHttpClient<IShowProcessingService, ShowProcessingService>(client =>
     {
-        client.BaseAddress = new Uri("https://api.tvmaze.com");
-        client.DefaultRequestHeaders.Add(HeaderNames.UserAgent, nameof(ShowsService));
-        client.Timeout = TimeSpan.FromSeconds(600);
+        client.BaseAddress = new Uri(baseAddress);
+        client.DefaultRequestHeaders.Add(HeaderNames.UserAgent, nameof(ShowsBackgroundService));
+        client.Timeout = TimeSpan.FromSeconds(timeOutInSeconds);
     })
-    .SetHandlerLifetime(TimeSpan.FromMinutes(10))
+    .SetHandlerLifetime(Timeout.InfiniteTimeSpan)
     .AddPolicyHandler(GetRetryPolicy());
 
-builder.Services.AddHostedService<ShowsService>();
+builder.Services.AddHostedService<ShowsBackgroundService>();
 
 var app = builder.Build();
 
-ShowEndpoints.MapShowEndpoints(app);
+ShowEndpoints.MapShowEndpoints(app, app.Configuration);
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -56,7 +59,5 @@ static IAsyncPolicy<HttpResponseMessage> GetRetryPolicy()
     return HttpPolicyExtensions
         .HandleTransientHttpError()
         .OrResult(msg => msg.StatusCode == HttpStatusCode.TooManyRequests)
-        .OrResult(msg => msg.StatusCode == HttpStatusCode.RequestTimeout || msg.StatusCode == HttpStatusCode.GatewayTimeout)
-        .WaitAndRetryAsync(10, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2,
-                                                                    retryAttempt)));
+        .WaitAndRetryAsync(10, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)));
 }

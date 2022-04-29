@@ -4,7 +4,7 @@ namespace TvShowScrubber.Models
 {
     public class ShowResponse : Show
     {
-        [JsonPropertyOrder(3)]
+        [JsonPropertyOrder(50)]
         public List<Cast> Cast { get; set; }
     }
 }
